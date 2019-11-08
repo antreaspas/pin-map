@@ -17,13 +17,19 @@ class Chart extends React.Component {
     const loadCountries110m = d3.json("countries-110m.json");
     const loadLocations = d3.json("locations.json");
 
-    Promise.all([loadCountries10m, loadCountries50m, loadCountries110m, loadLocations]).then(
-      ([countries10m, countries50m, countries110m, locations]) =>
-        this.draw(countries10m, countries50m, countries110m, locations)
+    Promise.all([
+      loadCountries10m,
+      loadCountries50m,
+      loadCountries110m,
+      loadLocations
+    ]).then(([countries10m, countries50m, countries110m, locations]) =>
+      this.draw(countries10m, countries50m, countries110m, locations)
     );
   }
 
   draw(countries10m, countries50m, countries110m, locations) {
+    const center = [width / 2, height / 2];
+
     const svg = d3
       .select(this.refs.canvas)
       .append("svg")
@@ -38,6 +44,7 @@ class Chart extends React.Component {
       .translate([width / 2, height / 2]);
     const path = d3.geoPath().projection(projection);
 
+    // Add water
     svg
       .append("circle")
       .attr("cx", width / 2)
@@ -45,6 +52,7 @@ class Chart extends React.Component {
       .attr("r", projection.scale())
       .style("fill", "#bfd7e4");
 
+    // Add land with country boundaries
     svg
       .selectAll("path")
       .data(
@@ -58,7 +66,32 @@ class Chart extends React.Component {
       .style("stroke", "#888")
       .style("stroke-width", "1.5px")
       .style("fill", () => "#f5dfa4")
-      .style("opacity", ".6");    
+      .style("opacity", ".6");
+
+    const markerGroup = svg.append("g");
+
+    function drawMarkers() {
+      const markers = markerGroup.selectAll("circle").data(locations);
+      markers
+        .enter()
+        .append("circle")
+        .merge(markers)
+        .attr("cx", d => projection([d.longitude, d.latitude])[0])
+        .attr("cy", d => projection([d.longitude, d.latitude])[1])
+        .attr("fill", d => {
+          const coordinate = [d.longitude, d.latitude];
+          const gdistance = d3.geoDistance(
+            coordinate,
+            projection.invert(center)
+          );
+          return gdistance > 1.57 ? "none" : "steelblue";
+        })
+        .attr("r", 7);
+
+      markerGroup.each(function() {
+        this.parentNode.appendChild(this);
+      });
+    }
 
     d3.timer(elapsed => {
       projection.rotate([
@@ -67,7 +100,9 @@ class Chart extends React.Component {
         config.horizontalTilt
       ]);
       svg.selectAll("path").attr("d", path);
+      drawMarkers();
     });
+    drawMarkers();
   }
 
   render() {
