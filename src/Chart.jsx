@@ -1,11 +1,15 @@
 import React from "react";
 import * as d3 from "d3";
-import d3GeoZoom from 'd3-geo-zoom';
+import d3GeoZoom from "d3-geo-zoom";
 import * as topojson from "topojson";
 
 const width = 960;
 const height = 500;
-
+const config = {
+  speed: -0.005,
+  verticalTilt: -15,
+  horizontalTilt: 0
+};
 class Chart extends React.Component {
   componentDidMount() {
     const loadCountries10m = d3.json("countries-10m.json");
@@ -52,7 +56,7 @@ class Chart extends React.Component {
     svg
       .selectAll("path")
       .data(
-        topojson.feature(countries50m, countries50m.objects.countries)
+        topojson.feature(countries110m, countries110m.objects.countries)
           .features
       )
       .enter()
@@ -64,22 +68,28 @@ class Chart extends React.Component {
       .style("fill", () => "#f5dfa4")
       .style("opacity", ".6");
 
+      const markerGroup = svg.append("g");
+
+      const timer = d3.timer(elapsed => {
+        projection.rotate([
+          config.speed * elapsed - 240,
+          config.verticalTilt,
+          config.horizontalTilt
+        ]);
+        render();
+      });
+
     // Add zoom & pan
     d3GeoZoom()
       .projection(projection)
       .northUp(true)
       .onMove(render)(svg.node());
 
-    function render() {
-      svg.selectAll('path').attr('d', path);
-      svg
-      .select("circle")
-      .attr("r", projection.scale())
-      .style("fill", "#bfd7e4");
-      drawMarkers();
-    }
 
-    const markerGroup = svg.append("g");
+    const tooltip = svg
+      .append("div")
+      .attr("class", "tooltip")
+      .style("opacity", 0);
 
     function drawMarkers() {
       const markers = markerGroup.selectAll("circle").data(locations);
@@ -97,11 +107,34 @@ class Chart extends React.Component {
           );
           return gdistance > 1.57 ? "none" : "steelblue";
         })
-        .attr("r", 7);
+        .attr("r", 5)
+        .on("mouseover", function(d) {    
+          tooltip.transition()    
+          .duration(200)    
+          .style("opacity", .9);    
+          tooltip.html("Employee count: " + d.count)  
+          .style("left", (d3.event.pageX) + "px")   
+          .style("top", (d3.event.pageY - 28) + "px");  
+        })          
+        .on("mouseout", function(d) {   
+          tooltip.transition()    
+          .duration(500)    
+          .style("opacity", 0); 
+        });
 
       markerGroup.each(function() {
         this.parentNode.appendChild(this);
       });
+    }
+
+    function render(onMove = false) {
+      if (onMove) timer.stop();
+      svg.selectAll("path").attr("d", path);
+      svg
+        .select("circle")
+        .attr("r", projection.scale())
+        .style("fill", "#bfd7e4");
+      drawMarkers();
     }
 
     drawMarkers();
