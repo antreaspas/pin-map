@@ -1,14 +1,10 @@
 import React from "react";
 import * as d3 from "d3";
+import d3GeoZoom from 'd3-geo-zoom';
 import * as topojson from "topojson";
 
 const width = 960;
 const height = 500;
-const config = {
-  speed: 0.005,
-  verticalTilt: -15,
-  horizontalTilt: 0
-};
 
 class Chart extends React.Component {
   componentDidMount() {
@@ -56,7 +52,7 @@ class Chart extends React.Component {
     svg
       .selectAll("path")
       .data(
-        topojson.feature(countries110m, countries110m.objects.countries)
+        topojson.feature(countries50m, countries50m.objects.countries)
           .features
       )
       .enter()
@@ -67,6 +63,21 @@ class Chart extends React.Component {
       .style("stroke-width", "1.5px")
       .style("fill", () => "#f5dfa4")
       .style("opacity", ".6");
+
+    // Add zoom & pan
+    d3GeoZoom()
+      .projection(projection)
+      .northUp(true)
+      .onMove(render)(svg.node());
+
+    function render() {
+      svg.selectAll('path').attr('d', path);
+      svg
+      .select("circle")
+      .attr("r", projection.scale())
+      .style("fill", "#bfd7e4");
+      drawMarkers();
+    }
 
     const markerGroup = svg.append("g");
 
@@ -93,15 +104,6 @@ class Chart extends React.Component {
       });
     }
 
-    d3.timer(elapsed => {
-      projection.rotate([
-        config.speed * elapsed - 240,
-        config.verticalTilt,
-        config.horizontalTilt
-      ]);
-      svg.selectAll("path").attr("d", path);
-      drawMarkers();
-    });
     drawMarkers();
   }
 
