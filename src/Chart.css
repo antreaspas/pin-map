@@ -2,6 +2,10 @@
 	fill: #f5dfa4;
 }
 
+.marker:hover {
+	fill: red;
+}
+
 div.tooltip { 
 	position: absolute;     
 	text-align: center;     

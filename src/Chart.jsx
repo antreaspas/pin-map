@@ -2,9 +2,10 @@ import React from "react";
 import * as d3 from "d3";
 import d3GeoZoom from "d3-geo-zoom";
 import * as topojson from "topojson";
+import "./Chart.css";
 
-const width = 960;
-const height = 500;
+const width = 1366;
+const height = 768;
 const config = {
   speed: -0.005,
   verticalTilt: -15,
@@ -12,22 +13,15 @@ const config = {
 };
 class Chart extends React.Component {
   componentDidMount() {
-    const loadCountries10m = d3.json("countries-10m.json");
-    const loadCountries50m = d3.json("countries-50m.json");
     const loadCountries110m = d3.json("countries-110m.json");
     const loadLocations = d3.json("locations.json");
 
-    Promise.all([
-      loadCountries10m,
-      loadCountries50m,
-      loadCountries110m,
-      loadLocations
-    ]).then(([countries10m, countries50m, countries110m, locations]) =>
-      this.draw(countries10m, countries50m, countries110m, locations)
+    Promise.all([loadCountries110m, loadLocations]).then(
+      ([countries, locations]) => this.drawGlobe(countries, locations)
     );
   }
 
-  draw(countries10m, countries50m, countries110m, locations) {
+  drawGlobe(countries, locations) {
     const center = [width / 2, height / 2];
 
     const svg = d3
@@ -35,6 +29,12 @@ class Chart extends React.Component {
       .append("svg")
       .attr("width", width)
       .attr("height", height);
+
+    const tooltip = d3
+      .select("body")
+      .append("div")
+      .attr("class", "tooltip")
+      .style("opacity", 0);
 
     const scl = Math.min(width, height) / 2.1;
 
@@ -47,6 +47,7 @@ class Chart extends React.Component {
     // Add water
     svg
       .append("circle")
+      .attr("class", "water")
       .attr("cx", width / 2)
       .attr("cy", height / 2)
       .attr("r", projection.scale())
@@ -55,10 +56,7 @@ class Chart extends React.Component {
     // Add land with country boundaries
     svg
       .selectAll("path")
-      .data(
-        topojson.feature(countries110m, countries110m.objects.countries)
-          .features
-      )
+      .data(topojson.feature(countries, countries.objects.countries).features)
       .enter()
       .append("path")
       .attr("class", "path")
@@ -68,66 +66,25 @@ class Chart extends React.Component {
       .style("fill", () => "#f5dfa4")
       .style("opacity", ".6");
 
-      const markerGroup = svg.append("g");
+    const markerGroup = svg.append("g");
 
-      const timer = d3.timer(elapsed => {
-        projection.rotate([
-          config.speed * elapsed - 240,
-          config.verticalTilt,
-          config.horizontalTilt
-        ]);
-        render();
-      });
+    // Add globe spin
+    const timer = d3.timer(elapsed => {
+      projection.rotate([
+        config.speed * elapsed - 240,
+        config.verticalTilt,
+        config.horizontalTilt
+      ]);
+      draw();
+    });
 
     // Add zoom & pan
     d3GeoZoom()
       .projection(projection)
       .northUp(true)
-      .onMove(render)(svg.node());
+      .onMove(draw)(svg.node());
 
-
-    const tooltip = svg
-      .append("div")
-      .attr("class", "tooltip")
-      .style("opacity", 0);
-
-    function drawMarkers() {
-      const markers = markerGroup.selectAll("circle").data(locations);
-      markers
-        .enter()
-        .append("circle")
-        .merge(markers)
-        .attr("cx", d => projection([d.longitude, d.latitude])[0])
-        .attr("cy", d => projection([d.longitude, d.latitude])[1])
-        .attr("fill", d => {
-          const coordinate = [d.longitude, d.latitude];
-          const gdistance = d3.geoDistance(
-            coordinate,
-            projection.invert(center)
-          );
-          return gdistance > 1.57 ? "none" : "steelblue";
-        })
-        .attr("r", 5)
-        .on("mouseover", function(d) {    
-          tooltip.transition()    
-          .duration(200)    
-          .style("opacity", .9);    
-          tooltip.html("Employee count: " + d.count)  
-          .style("left", (d3.event.pageX) + "px")   
-          .style("top", (d3.event.pageY - 28) + "px");  
-        })          
-        .on("mouseout", function(d) {   
-          tooltip.transition()    
-          .duration(500)    
-          .style("opacity", 0); 
-        });
-
-      markerGroup.each(function() {
-        this.parentNode.appendChild(this);
-      });
-    }
-
-    function render(onMove = false) {
+    function draw(onMove = false) {
       if (onMove) timer.stop();
       svg.selectAll("path").attr("d", path);
       svg
@@ -137,7 +94,41 @@ class Chart extends React.Component {
       drawMarkers();
     }
 
-    drawMarkers();
+    function drawMarkers() {
+      const markers = markerGroup.selectAll("circle").data(locations);
+      markers
+        .enter()
+        .append("circle")
+        .merge(markers)
+        .attr("cx", d => projection([d.longitude, d.latitude])[0])
+        .attr("cy", d => projection([d.longitude, d.latitude])[1])
+        .attr("r", 6)
+        .attr("class", "marker")
+        .attr("fill", d => {
+          const coordinate = [d.longitude, d.latitude];
+          const gdistance = d3.geoDistance(
+            coordinate,
+            projection.invert(center)
+          );
+          return gdistance > 1.45 ? "none" : "steelblue";
+        })
+        .on("mouseover", function(d) {
+          tooltip
+            .transition()
+            .duration(200)
+            .style("opacity", 0.9);
+          tooltip
+            .html("Employees: " + d.count)
+            .style("left", d3.event.pageX + "px")
+            .style("top", d3.event.pageY - 28 + "px");
+        })
+        .on("mouseout", function(d) {
+          tooltip
+            .transition()
+            .duration(500)
+            .style("opacity", 0);
+        });
+    }
   }
 
   render() {
