@@ -1,6 +1,5 @@
 import React from "react";
 import * as d3 from "d3";
-import d3GeoZoom from "d3-geo-zoom";
 import d3Tip from "d3-tip";
 import * as topojson from "topojson";
 import "./Globe.css";
@@ -15,17 +14,21 @@ const config = {
 
 class Globe extends React.Component {
   componentDidMount() {
-    const loadLand = d3.json(
-      "https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json"
-    );
-    const loadLocations = d3.json("locations.json");
-
-    Promise.all([loadLand, loadLocations]).then(([land, locations]) =>
-      this.drawGlobe(land, locations)
+    Promise.all([
+      d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json"),
+      d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/land-50m.json"),
+      d3.json("locations.json")
+    ]).then(([lowResLand, highResLand, locations]) =>
+      this.drawGlobe(
+        loadLandTopoJson(lowResLand),
+        loadLandTopoJson(highResLand),
+        locations
+      )
     );
   }
 
-  drawGlobe(land, locations) {
+  drawGlobe(lowResLand, highResLand, locations) {
+    let moving = true;
     const center = [width / 2, height / 2];
     const initialScale = Math.min(width, height) / 2.1;
 
@@ -33,7 +36,7 @@ class Globe extends React.Component {
       .geoOrthographic()
       .scale(initialScale)
       .translate([width / 2, height / 2]);
-    const path = d3.geoPath().projection(projection);
+    const geoPath = d3.geoPath().projection(projection);
 
     const svg = d3
       .select(this.refs.canvas)
@@ -41,12 +44,53 @@ class Globe extends React.Component {
       .attr("width", width)
       .attr("height", height);
 
+    let rotate0, coords0;
+    const coords = () =>
+      projection.rotate(rotate0).invert([d3.event.x, d3.event.y]);
+
     const tooltip = d3Tip()
       .attr("class", "d3-tip")
-      .offset([-10, 0])
+      .offset([-15, 0])
       .html(d => `<span>${d.tag}</span>`);
 
-    svg.call(tooltip);
+    svg
+      .call(
+        d3
+          .drag()
+          .on("start", () => {
+            rotate0 = projection.rotate();
+            coords0 = coords();
+            moving = true;
+          })
+          .on("drag", () => {
+            const coords1 = coords();
+            projection.rotate([
+              rotate0[0] + coords1[0] - coords0[0],
+              rotate0[1] + coords1[1] - coords0[1]
+            ]);
+            draw(true);
+          })
+          .on("end", () => {
+            moving = false;
+            draw(true);
+          })
+      )
+      .call(
+        d3
+          .zoom()
+          .on("zoom", () => {
+            projection.scale(initialScale * d3.event.transform.k);
+            draw(true);
+          })
+          .on("start", () => {
+            moving = true;
+          })
+          .on("end", () => {
+            moving = false;
+            draw(true);
+          })
+      )
+      .call(tooltip);
 
     // Add water
     svg
@@ -58,13 +102,8 @@ class Globe extends React.Component {
       .style("fill", "#bfd7e4");
 
     // Add land with country boundaries
-    svg
-      .selectAll("path")
-      .data(topojson.feature(land, land.objects.land).features)
-      .enter()
+    const path = svg
       .append("path")
-      .attr("class", "path")
-      .attr("d", path)
       .style("stroke", "#888")
       .style("stroke-width", "1.5px")
       .style("fill", () => "#f5dfa4")
@@ -82,19 +121,12 @@ class Globe extends React.Component {
       draw();
     });
 
-    // Add zoom & pan
-    d3GeoZoom()
-      .projection(projection)
-      .northUp(true)
-      .scaleExtent([1, 80])
-      .onMove(draw)(svg.node());
-
     function draw(onMove = false) {
       /**
        * Redraw water, land and markers, and stop spin if user panned/zoomed.
        */
       if (onMove) timer.stop();
-      svg.selectAll("path").attr("d", path);
+      path.data(moving ? lowResLand : highResLand).attr("d", geoPath);
       svg
         .select("circle")
         .attr("r", projection.scale())
@@ -131,6 +163,10 @@ function isVisibleInGlobe(dataPoint, projection, center) {
       projection.invert(center)
     ) > 1.45
   );
+}
+
+function loadLandTopoJson(data) {
+  return topojson.feature(data, data.objects.land).features;
 }
 
 export default Globe;
