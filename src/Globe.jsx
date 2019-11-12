@@ -86,6 +86,7 @@ class Globe extends React.Component {
     d3GeoZoom()
       .projection(projection)
       .northUp(true)
+      .scaleExtent([1, 80])
       .onMove(draw)(svg.node());
 
     function draw(onMove = false) {
