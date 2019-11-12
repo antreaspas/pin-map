@@ -15,7 +15,9 @@ const config = {
 
 class Globe extends React.Component {
   componentDidMount() {
-    const loadLand = d3.json("land-110m.json");
+    const loadLand = d3.json(
+      "https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json"
+    );
     const loadLocations = d3.json("locations.json");
 
     Promise.all([loadLand, loadLocations]).then(([land, locations]) =>
@@ -103,16 +105,14 @@ class Globe extends React.Component {
         .merge(markers)
         .attr("cx", d => projection([d.longitude, d.latitude])[0])
         .attr("cy", d => projection([d.longitude, d.latitude])[1])
-        .attr("r", 4)
+        .attr("r", 3)
         .attr("class", "marker")
-        .attr("fill", d => {
-          const coordinate = [d.longitude, d.latitude];
-          const gdistance = d3.geoDistance(
-            coordinate,
-            projection.invert(center)
-          );
-          return gdistance > 1.45 ? "none" : "steelblue";
-        })
+        .style("fill", d =>
+          isVisibleInGlobe(d, projection, center) ? "none" : "crimson"
+        )
+        .style("stroke", d =>
+          isVisibleInGlobe(d, projection, center) ? "none" : "crimson"
+        )
         .on("mouseover", tooltip.show)
         .on("mouseout", tooltip.hide);
     }
@@ -121,6 +121,15 @@ class Globe extends React.Component {
   render() {
     return <div ref="canvas" />;
   }
+}
+
+function isVisibleInGlobe(dataPoint, projection, center) {
+  return (
+    d3.geoDistance(
+      [dataPoint.longitude, dataPoint.latitude],
+      projection.invert(center)
+    ) > 1.45
+  );
 }
 
 export default Globe;

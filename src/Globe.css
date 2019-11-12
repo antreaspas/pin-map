@@ -2,8 +2,14 @@
 	fill: #f5dfa4;
 }
 
+.marker {
+	fill-opacity: 0.5;
+}
+
 .marker:hover {
+	stroke:red;
 	fill: red;
+	fill-opacity: 1;
 }
 
 .d3-tip {
