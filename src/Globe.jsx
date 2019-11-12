@@ -1,8 +1,9 @@
 import React from "react";
 import * as d3 from "d3";
 import d3GeoZoom from "d3-geo-zoom";
+import d3Tip from "d3-tip";
 import * as topojson from "topojson";
-import "./Chart.css";
+import "./Globe.css";
 
 const width = 1366;
 const height = 768;
@@ -11,18 +12,26 @@ const config = {
   verticalTilt: -15,
   horizontalTilt: 0
 };
-class Chart extends React.Component {
+
+class Globe extends React.Component {
   componentDidMount() {
-    const loadCountries110m = d3.json("countries-110m.json");
+    const loadLand = d3.json("land-110m.json");
     const loadLocations = d3.json("locations.json");
 
-    Promise.all([loadCountries110m, loadLocations]).then(
-      ([countries, locations]) => this.drawGlobe(countries, locations)
+    Promise.all([loadLand, loadLocations]).then(([land, locations]) =>
+      this.drawGlobe(land, locations)
     );
   }
 
-  drawGlobe(countries, locations) {
+  drawGlobe(land, locations) {
     const center = [width / 2, height / 2];
+    const initialScale = Math.min(width, height) / 2.1;
+
+    const projection = d3
+      .geoOrthographic()
+      .scale(initialScale)
+      .translate([width / 2, height / 2]);
+    const path = d3.geoPath().projection(projection);
 
     const svg = d3
       .select(this.refs.canvas)
@@ -30,19 +39,12 @@ class Chart extends React.Component {
       .attr("width", width)
       .attr("height", height);
 
-    const tooltip = d3
-      .select("body")
-      .append("div")
-      .attr("class", "tooltip")
-      .style("opacity", 0);
+    const tooltip = d3Tip()
+      .attr("class", "d3-tip")
+      .offset([-10, 0])
+      .html(d => `<span>${d.tag}</span>`);
 
-    const scl = Math.min(width, height) / 2.1;
-
-    const projection = d3
-      .geoOrthographic()
-      .scale(scl)
-      .translate([width / 2, height / 2]);
-    const path = d3.geoPath().projection(projection);
+    svg.call(tooltip);
 
     // Add water
     svg
@@ -56,7 +58,7 @@ class Chart extends React.Component {
     // Add land with country boundaries
     svg
       .selectAll("path")
-      .data(topojson.feature(countries, countries.objects.countries).features)
+      .data(topojson.feature(land, land.objects.land).features)
       .enter()
       .append("path")
       .attr("class", "path")
@@ -85,16 +87,15 @@ class Chart extends React.Component {
       .onMove(draw)(svg.node());
 
     function draw(onMove = false) {
+      /**
+       * Redraw water, land and markers, and stop spin if user panned/zoomed.
+       */
       if (onMove) timer.stop();
       svg.selectAll("path").attr("d", path);
       svg
         .select("circle")
         .attr("r", projection.scale())
         .style("fill", "#bfd7e4");
-      drawMarkers();
-    }
-
-    function drawMarkers() {
       const markers = markerGroup.selectAll("circle").data(locations);
       markers
         .enter()
@@ -102,7 +103,7 @@ class Chart extends React.Component {
         .merge(markers)
         .attr("cx", d => projection([d.longitude, d.latitude])[0])
         .attr("cy", d => projection([d.longitude, d.latitude])[1])
-        .attr("r", 6)
+        .attr("r", 4)
         .attr("class", "marker")
         .attr("fill", d => {
           const coordinate = [d.longitude, d.latitude];
@@ -112,22 +113,8 @@ class Chart extends React.Component {
           );
           return gdistance > 1.45 ? "none" : "steelblue";
         })
-        .on("mouseover", function(d) {
-          tooltip
-            .transition()
-            .duration(200)
-            .style("opacity", 0.9);
-          tooltip
-            .html("Employees: " + d.count)
-            .style("left", d3.event.pageX + "px")
-            .style("top", d3.event.pageY - 28 + "px");
-        })
-        .on("mouseout", function(d) {
-          tooltip
-            .transition()
-            .duration(500)
-            .style("opacity", 0);
-        });
+        .on("mouseover", tooltip.show)
+        .on("mouseout", tooltip.hide);
     }
   }
 
@@ -136,4 +123,4 @@ class Chart extends React.Component {
   }
 }
 
-export default Chart;
+export default Globe;

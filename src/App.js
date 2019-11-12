@@ -1,11 +1,11 @@
 import React from 'react';
 import './App.css';
-import Chart from './Chart';
+import Globe from './Globe';
 
 function App() {
   return (
     <div id="app">
-      <Chart />
+      <Globe />
     </div>
   );
 }
