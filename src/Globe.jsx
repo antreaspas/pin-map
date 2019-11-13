@@ -29,6 +29,7 @@ class Globe extends React.Component {
 
   drawGlobe(lowResLand, highResLand, locations) {
     let moving = true;
+    let stoppedSpinning = false;
     const center = [width / 2, height / 2];
     const initialScale = Math.min(width, height) / 2.1;
 
@@ -112,20 +113,27 @@ class Globe extends React.Component {
     const markerGroup = svg.append("g");
 
     // Add globe spin
-    const timer = d3.timer(elapsed => {
+    let totalElapsedTime = 0;
+    let startTime = d3.now();
+    const timer = d3.timer(timerCallback);
+
+    function timerCallback() {
       projection.rotate([
-        config.speed * elapsed - 240,
+        config.speed * (d3.now() - startTime) - 240,
         config.verticalTilt,
         config.horizontalTilt
       ]);
       draw();
-    });
+    }
 
     function draw(onMove = false) {
       /**
        * Redraw water, land and markers, and stop spin if user panned/zoomed.
        */
-      if (onMove) timer.stop();
+      if (onMove) {
+        timer.stop();
+        stoppedSpinning = true;
+      }
       path.data(moving ? lowResLand : highResLand).attr("d", geoPath);
       svg
         .select("circle")
@@ -146,8 +154,20 @@ class Globe extends React.Component {
         .style("stroke", d =>
           isVisibleInGlobe(d, projection, center) ? "none" : "crimson"
         )
-        .on("mouseover", tooltip.show)
-        .on("mouseout", tooltip.hide);
+        .on("mouseover", function(d) {
+          if (!stoppedSpinning) {
+            totalElapsedTime = d3.now() - startTime;
+            timer.stop();
+          }
+          tooltip.show(d, this);
+        })
+        .on("mouseout", function(d) {
+          if (!stoppedSpinning) {
+            startTime = d3.now() - totalElapsedTime;
+            timer.restart(timerCallback);
+          }
+          tooltip.hide(d, this);
+        });
     }
   }
 
