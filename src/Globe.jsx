@@ -17,7 +17,7 @@ class Globe extends React.Component {
     Promise.all([
       d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json"),
       d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/land-50m.json"),
-      d3.json("locations.json")
+      d3.json(`${process.env.PUBLIC_URL}/locations.json`)
     ]).then(([lowResLand, highResLand, locations]) =>
       this.drawGlobe(
         loadLandTopoJson(lowResLand),
