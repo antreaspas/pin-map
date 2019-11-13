@@ -146,7 +146,7 @@ class Globe extends React.Component {
         .merge(markers)
         .attr("cx", d => projection([d.longitude, d.latitude])[0])
         .attr("cy", d => projection([d.longitude, d.latitude])[1])
-        .attr("r", 3)
+        .attr("r", 4)
         .attr("class", "marker")
         .style("fill", d =>
           isVisibleInGlobe(d, projection, center) ? "none" : "crimson"
