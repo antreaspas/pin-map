@@ -15,7 +15,8 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "lint": "eslint src -c .eslintrc.json --ext js,jsx"
+    "lint": "eslint src -c .eslintrc.json --ext js,jsx",
+    "deploy": "aws s3 sync build/ s3://pin-map-demo --acl public-read"
   },
   "eslintConfig": {
     "extends": "react-app"
