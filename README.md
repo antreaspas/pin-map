@@ -2,7 +2,9 @@
 
 A spinning globe with markers (pins) with zoom & pan capability using React and D3.
 
-Mapa data used are pre-built TopoJSON from [topojson/world-atlas](https://github.com/topojson/world-atlas).
+<img src="globe.png" width="450">
+
+Map data used are pre-built TopoJSON from [topojson/world-atlas](https://github.com/topojson/world-atlas).
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
