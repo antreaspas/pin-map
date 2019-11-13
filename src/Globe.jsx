@@ -79,6 +79,7 @@ class Globe extends React.Component {
       .call(
         d3
           .zoom()
+          .scaleExtent([1, 70])
           .on("zoom", () => {
             projection.scale(initialScale * d3.event.transform.k);
             draw(true);
