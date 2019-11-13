@@ -155,18 +155,18 @@ class Globe extends React.Component {
           isVisibleInGlobe(d, projection, center) ? "none" : "crimson"
         )
         .on("mouseover", function(d) {
+          tooltip.show(d, this);
           if (!stoppedSpinning) {
             totalElapsedTime = d3.now() - startTime;
             timer.stop();
           }
-          tooltip.show(d, this);
         })
         .on("mouseout", function(d) {
+          tooltip.hide(d, this);
           if (!stoppedSpinning) {
             startTime = d3.now() - totalElapsedTime;
             timer.restart(timerCallback);
           }
-          tooltip.hide(d, this);
         });
     }
   }
