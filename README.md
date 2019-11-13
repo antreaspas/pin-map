@@ -10,6 +10,7 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 ## Features
 - Initially renders as a spinning globe with red markers based on locations data.
+- Markers disappear when leaving globe projection and reappear when they enter the view.
 - When mouse hovers over a marker while spinning, the animation is paused and a tooltip is displayed above the hovered marker displaying the location text from data. When the mouse leaves the marker, the animation resumes.
 - When user interacts with globe with pan or zoom, the spinning animation stops.
 - While the globe is spinning, or while the user pans or zooms, the land masses are rendered in low resolution. When the user does not interact with the globe and its not spinning, the map is rendered in high resolution.
