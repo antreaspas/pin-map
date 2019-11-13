@@ -2,14 +2,18 @@
 
 A spinning globe with markers (pins) with zoom & pan capability using React and D3.
 
-During spinning, panning, or zooming, map is rendered with low resolution data in low resolution to prevent jittering.
-When globe is still, the map is rendered with higher resolution data.
-
 Mapa data used are pre-built TopoJSON from [topojson/world-atlas](https://github.com/topojson/world-atlas).
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Features
+- Initially renders as a spinning globe with red markers based on locations data.
+- When mouse hovers over a marker while spinning, the animation is paused and a tooltip is displayed above the hovered marker displaying the location text from data. When the mouse leaves the marker, the animation resumes.
+- When user interacts with globe with pan or zoom, the spinning animation stops.
+- While the globe is spinning, or while the user pans or zooms, the land masses are rendered in low resolution. When the user does not interact with the globe and its not spinning, the map is rendered in high resolution.
+
 ## Libraries used
+
 - d3: Loading JSON, rendering SVG elements, and data update patterns
   - d3-geo: Globe projection, scaling, and mapping coordinates
   - d3-zoom & d3-drag: Map zoom & pan
@@ -18,7 +22,7 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 - topojson: Topology encoding for map land masses
 
 ## Installation
-
+Clone repository locally and run:
 ```bash
 npm i
 ```
