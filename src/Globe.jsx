@@ -22,7 +22,7 @@ class Globe extends React.Component {
       this.drawGlobe(
         loadLandTopoJson(lowResLand),
         loadLandTopoJson(highResLand),
-        locations
+        filterLocations(locations)
       )
     );
   }
@@ -188,6 +188,23 @@ function isVisibleInGlobe(dataPoint, projection, center) {
 
 function loadLandTopoJson(data) {
   return topojson.feature(data, data.objects.land).features;
+}
+
+function filterLocations(locations) {
+  const uniqueLocations = [];
+  loop1: for (const location of locations) {
+    for (const uniqueLocation of uniqueLocations) {
+      if (isAbsDifferenceLowerThanThreshold(location.longitude, uniqueLocation.longitude) && isAbsDifferenceLowerThanThreshold(location.latitude, uniqueLocation.latitude)) {
+        continue loop1;
+      }
+    }
+    uniqueLocations.push(location);
+  }
+  return uniqueLocations;
+}
+
+function isAbsDifferenceLowerThanThreshold(a, b) {
+  return Math.abs(a - b) < 0.01;
 }
 
 export default Globe;
