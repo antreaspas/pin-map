@@ -17,7 +17,7 @@ class Globe extends React.Component {
     Promise.all([
       d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json"),
       d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/land-50m.json"),
-      d3.json(`${process.env.PUBLIC_URL}/locations.json`)
+      d3.json(`${process.env.REACT_APP_S3_OUTPUT_URL}/locations.json`)
     ]).then(([lowResLand, highResLand, locations]) =>
       this.drawGlobe(
         loadLandTopoJson(lowResLand),
@@ -156,14 +156,14 @@ class Globe extends React.Component {
           isVisibleInGlobe(d, projection, center) ? "none" : "crimson"
         )
         .on("mouseover", function(d) {
-          tooltip.show(d, this);
+          if (d.tag) tooltip.show(d, this);
           if (!stoppedSpinning) {
             totalElapsedTime = d3.now() - startTime;
             timer.stop();
           }
         })
         .on("mouseout", function(d) {
-          tooltip.hide(d, this);
+          if (d.tag) tooltip.hide(d, this);
           if (!stoppedSpinning) {
             startTime = d3.now() - totalElapsedTime;
             timer.restart(timerCallback);
